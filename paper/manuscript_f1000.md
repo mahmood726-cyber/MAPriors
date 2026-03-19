@@ -1,12 +1,12 @@
 # MAPriors: A Browser-Based Engine for Meta-Analytic Predictive Priors and Dynamic Borrowing in Clinical Trial Design
 
-**Authors:** [AUTHOR_NAME_PLACEHOLDER]^1^
+**Authors:** Mahmood Ahmad^1^
 
-^1^ [AFFILIATION_PLACEHOLDER]
+^1^ Royal Free London NHS Foundation Trust, London, UK; Tahir Heart Institute, Rabwah, Pakistan
 
-**Corresponding author:** [CORRESPONDING_EMAIL_PLACEHOLDER]
+**Corresponding author:** mahmood726@gmail.com
 
-**ORCID:** [ORCID_PLACEHOLDER]
+**ORCID:** YOUR-ORCID-HERE
 
 **Keywords:** MAP prior, dynamic borrowing, historical controls, Bayesian clinical trial design, robust mixture prior, effective sample size, operating characteristics, browser-based tool
 
@@ -20,7 +20,7 @@
 
 **Results:** Validation against the canonical Crohn's disease placebo dataset (8 historical studies, N=960) produces a MAP prior mean of 17.7% (logit scale: --1.535) with ESS of 959, matching the total historical sample size as expected under near-zero between-study heterogeneity. Operating characteristics simulation confirms nominal type I error (~5%) and demonstrates power gains of 10--15 percentage points over vague-prior designs at equivalent sample sizes. A 38-test automated Selenium suite and three-persona expert review (8 issues identified and fixed) provide additional quality assurance.
 
-**Conclusions:** MAPriors democratizes MAP prior methodology for clinical teams without R expertise, providing a complete workflow from historical data entry through operating characteristics evaluation to regulatory-ready reporting. Source code is available at [GITHUB_URL_PLACEHOLDER] under an open-source license.
+**Conclusions:** MAPriors democratizes MAP prior methodology for clinical teams without R expertise, providing a complete workflow from historical data entry through operating characteristics evaluation to regulatory-ready reporting. Source code is available at https://github.com/mahmood726-cyber/MAPriors under an open-source license.
 
 (Word count: 249)
 
@@ -362,9 +362,9 @@ MAPriors provides a complete, browser-based workflow for MAP prior derivation an
 
 ## Software Availability
 
-**Source code:** [GITHUB_URL_PLACEHOLDER]
+**Source code:** https://github.com/mahmood726-cyber/MAPriors
 
-**Archived version:** [ZENODO_DOI_PLACEHOLDER]
+**Archived version:** ZENODO_DOI_PENDING
 
 **License:** Open source (MIT)
 
@@ -390,7 +390,7 @@ All datasets are embedded in the source code and can be loaded via the applicati
 
 ## Author Contributions
 
-[AUTHOR_NAME_PLACEHOLDER] conceived the tool, implemented the software, conducted validation, and wrote the manuscript.
+Mahmood Ahmad conceived the tool, implemented the software, conducted validation, and wrote the manuscript.
 
 ---
 
