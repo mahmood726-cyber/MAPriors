@@ -184,18 +184,108 @@ table.dt input:focus { outline:none; background: var(--accent-light); }
 .webr-summary.fail { background:#fee2e2; color:#991b1b; }
 body.dark .webr-summary.pass { background:#064e3b; color:#6ee7b7; }
 body.dark .webr-summary.fail { background:#7f1d1d; color:#fca5a5; }
+
+/* Skip link for accessibility */
+.skip-link {
+  position:absolute; top:-40px; left:0; background:var(--accent); color:#fff;
+  padding:8px 16px; z-index:9999; font-size:0.85rem; border-radius:0 0 var(--radius) 0;
+  transition:top 0.2s;
+}
+.skip-link:focus { top:0; }
+
+/* ESS Curve Card */
+.ess-curve-wrap { position:relative; }
+.ess-marker-line { stroke-dasharray:4,3; stroke-width:1; }
+
+/* Morita ESS detail panel */
+.ess-detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:12px 0; }
+@media(max-width:700px) { .ess-detail-grid { grid-template-columns:1fr; } }
+.ess-detail-item {
+  background:var(--bg-input); border:1px solid var(--border);
+  border-radius:var(--radius); padding:12px; position:relative;
+}
+.ess-detail-item .ess-val { font-size:1.5rem; font-weight:800; font-family:var(--mono); }
+.ess-detail-item .ess-lbl { font-size:0.78rem; color:var(--text-muted); margin-top:2px; }
+.ess-detail-item .ess-bar {
+  position:absolute; bottom:0; left:0; height:4px; border-radius:0 0 var(--radius) var(--radius);
+  transition:width 0.3s ease;
+}
+
+/* Prior-data conflict auto-detection banner */
+.pdc-auto-banner {
+  padding:12px 18px; border-radius:var(--radius); margin:12px 0;
+  display:flex; align-items:center; gap:12px; font-size:0.88rem;
+}
+.pdc-auto-banner.green { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; }
+.pdc-auto-banner.yellow { background:#fef3c7; color:#92400e; border:1px solid #fbbf24; }
+.pdc-auto-banner.red { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+body.dark .pdc-auto-banner.green { background:#064e3b; color:#6ee7b7; border-color:#065f46; }
+body.dark .pdc-auto-banner.yellow { background:#78350f; color:#fde68a; border-color:#92400e; }
+body.dark .pdc-auto-banner.red { background:#7f1d1d; color:#fca5a5; border-color:#991b1b; }
+
+/* Borrowing heatmap */
+.borrow-heatmap { display:grid; grid-template-columns:repeat(auto-fill, minmax(56px, 1fr)); gap:3px; margin:12px 0; }
+.borrow-cell {
+  text-align:center; padding:8px 2px; border-radius:4px; font-family:var(--mono);
+  font-size:0.72rem; font-weight:700; transition:transform 0.15s;
+}
+.borrow-cell:hover { transform:scale(1.08); }
+
+/* Keyboard focus indicators */
+input:focus-visible, select:focus-visible, button:focus-visible {
+  outline:2px solid var(--accent); outline-offset:2px;
+}
+[role="button"]:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+/* Live status region */
+.sr-only {
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+
+/* Tab panel for ESS methods */
+.ess-tabs { display:flex; gap:0; margin-bottom:0; border-bottom:2px solid var(--border); }
+.ess-tab {
+  padding:8px 18px; font-size:0.85rem; font-weight:600; cursor:pointer;
+  border:none; background:transparent; color:var(--text-muted);
+  border-bottom:2px solid transparent; margin-bottom:-2px; transition:all 0.15s;
+}
+.ess-tab[aria-selected="true"] {
+  color:var(--accent); border-bottom-color:var(--accent); background:var(--accent-light);
+}
+.ess-tab:hover { color:var(--accent); }
+.ess-tabpanel { padding:14px 0; }
+.ess-tabpanel[hidden] { display:none; }
+
+/* Tooltip */
+.info-tooltip {
+  position:relative; display:inline-flex; align-items:center; cursor:help;
+  margin-left:4px; width:16px; height:16px; border-radius:50%;
+  background:var(--accent-light); color:var(--accent); font-size:0.68rem;
+  font-weight:700; text-align:center; justify-content:center; line-height:1;
+}
+.info-tooltip::after {
+  content:attr(data-tip); position:absolute; bottom:calc(100% + 6px); left:50%;
+  transform:translateX(-50%); background:var(--text-heading); color:#fff;
+  padding:6px 10px; border-radius:4px; font-size:0.75rem; font-weight:400;
+  white-space:nowrap; pointer-events:none; opacity:0; transition:opacity 0.15s;
+  z-index:300; max-width:260px; white-space:normal;
+}
+.info-tooltip:hover::after, .info-tooltip:focus::after { opacity:1; }
 </style>
 </head>
 <body>
-<header>
+<a class="skip-link" href="#mainContent">Skip to main content</a>
+<div class="sr-only" aria-live="polite" id="liveStatus"></div>
+<header role="banner">
   <h1><span class="brand">MAP Priors</span><span class="sub">Dynamic Borrowing Engine</span></h1>
   <div class="hdr-btns">
     <div class="example-dropdown">
-      <button onclick="toggleExampleDropdown()">Load Example &#9662;</button>
-      <div class="example-dropdown-content" id="exampleDropdown">
-        <button onclick="loadExample('crohns');hideExampleDropdown()">Crohn's Disease Placebo Rates (Binary)</button>
-        <button onclick="loadExample('uc');hideExampleDropdown()">Ulcerative Colitis CDAI Scores (Continuous)</button>
-        <button onclick="loadExample('onco');hideExampleDropdown()">Oncology ORR Historical Controls (Binary)</button>
+      <button onclick="toggleExampleDropdown()" aria-haspopup="true" aria-expanded="false" id="exampleDropdownBtn" aria-label="Load example dataset">Load Example &#9662;</button>
+      <div class="example-dropdown-content" id="exampleDropdown" role="menu" aria-labelledby="exampleDropdownBtn">
+        <button role="menuitem" onclick="loadExample('crohns');hideExampleDropdown()">Crohn's Disease Placebo Rates (Binary)</button>
+        <button role="menuitem" onclick="loadExample('uc');hideExampleDropdown()">Ulcerative Colitis CDAI Scores (Continuous)</button>
+        <button role="menuitem" onclick="loadExample('onco');hideExampleDropdown()">Oncology ORR Historical Controls (Binary)</button>
       </div>
     </div>
     <button onclick="exportRCode()">Export R Code</button>
@@ -204,10 +294,10 @@ body.dark .webr-summary.fail { background:#7f1d1d; color:#fca5a5; }
     <button id="themeBtn" onclick="toggleTheme()">Dark Mode</button>
   </div>
 </header>
-<div class="container">
+<main class="container" id="mainContent" role="main">
 
   <!-- Endpoint Type -->
-  <div class="card fade-in">
+  <div class="card fade-in" role="region" aria-label="Configuration">
     <h2>Configuration</h2>
     <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
       <div>
@@ -229,7 +319,7 @@ body.dark .webr-summary.fail { background:#7f1d1d; color:#fca5a5; }
   </div>
 
   <!-- Historical Data -->
-  <div class="card fade-in" id="dataCard">
+  <div class="card fade-in" id="dataCard" role="region" aria-label="Historical Control Data">
     <h2>Historical Control Data <span class="badge" id="studyBadge">0 studies</span></h2>
     <div style="overflow-x:auto">
       <table class="dt" id="dataTable">
@@ -252,7 +342,7 @@ body.dark .webr-summary.fail { background:#7f1d1d; color:#fca5a5; }
         <label>Informative Weight (w)</label>
         <div class="slider-row">
           <span style="font-size:0.8rem;color:var(--text-muted)">Vague</span>
-          <input type="range" id="wSlider" min="0" max="100" value="80" oninput="updateSlider()">
+          <input type="range" id="wSlider" min="0" max="100" value="80" oninput="updateSlider()" aria-label="Informative weight percentage" aria-valuemin="0" aria-valuemax="100" aria-valuenow="80">
           <span style="font-size:0.8rem;color:var(--text-muted)">MAP</span>
           <span class="slider-val" id="wVal">80%</span>
         </div>
@@ -281,14 +371,44 @@ body.dark .webr-summary.fail { background:#7f1d1d; color:#fca5a5; }
     <div class="section-title" style="margin-top:22px">Historical Studies + MAP Predictive Band</div>
     <div class="plot-container forest-wrap" id="forestPlot"></div>
 
-    <div class="card fade-in" style="margin-top:18px">
-      <h2>Effective Sample Size (ESS)</h2>
-      <div id="essContent"></div>
+    <div class="card fade-in" style="margin-top:18px" role="region" aria-label="Effective Sample Size Analysis">
+      <h2>Effective Sample Size (ESS) <span class="info-tooltip" tabindex="0" data-tip="ESS measures how many patients the prior is worth. Morita (2008) method uses the curvature of the log-prior at its mode divided by per-patient Fisher information.">?</span></h2>
+      <!-- ESS Tabs: Summary vs Detail vs Sensitivity Curve -->
+      <div class="ess-tabs" role="tablist" aria-label="ESS analysis views">
+        <button class="ess-tab" role="tab" id="essTabSummary" aria-controls="essPanelSummary" aria-selected="true" onclick="switchESSTab('summary')">Summary</button>
+        <button class="ess-tab" role="tab" id="essTabDetail" aria-controls="essPanelDetail" aria-selected="false" onclick="switchESSTab('detail')">Morita Detail</button>
+        <button class="ess-tab" role="tab" id="essTabCurve" aria-controls="essPanelCurve" aria-selected="false" onclick="switchESSTab('curve')">ESS Sensitivity Curve</button>
+      </div>
+      <div class="ess-tabpanel" role="tabpanel" id="essPanelSummary" aria-labelledby="essTabSummary">
+        <div id="essContent"></div>
+      </div>
+      <div class="ess-tabpanel" role="tabpanel" id="essPanelDetail" aria-labelledby="essTabDetail" hidden>
+        <div id="essDetailContent"></div>
+      </div>
+      <div class="ess-tabpanel" role="tabpanel" id="essPanelCurve" aria-labelledby="essTabCurve" hidden>
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
+          Shows how the effective sample size changes as you vary the informative weight (w). The current weight is marked.
+        </p>
+        <div class="plot-container ess-curve-wrap" id="essCurvePlot"></div>
+        <div class="plot-legend" id="essCurveLegend"></div>
+      </div>
     </div>
 
-    <div class="card fade-in" style="margin-top:18px">
+    <!-- Prior-Data Conflict Auto-Detection Banner -->
+    <div id="pdcAutoBanner" style="display:none"></div>
+
+    <div class="card fade-in" style="margin-top:18px" role="region" aria-label="Interpretation">
       <h2>Interpretation</h2>
       <div id="interpContent" style="font-size:0.88rem;line-height:1.7"></div>
+    </div>
+
+    <!-- Borrowing Weight Heatmap (new Phase 2 feature) -->
+    <div class="card fade-in" style="margin-top:18px" id="borrowHeatmapCard" role="region" aria-label="Borrowing Weight Heatmap">
+      <h2>Study-Level Borrowing Weights <span class="badge">Per-Study</span></h2>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
+        Shows how much each historical study contributes to the MAP prior. Larger studies with outcomes closer to the pooled mean contribute more.
+      </p>
+      <div id="borrowHeatmapContent"></div>
     </div>
 
     <!-- Phase 2: Power Prior -->
@@ -302,7 +422,7 @@ body.dark .webr-summary.fail { background:#7f1d1d; color:#fca5a5; }
         <label>Discount Parameter (&alpha;<sub>0</sub>)</label>
         <div class="slider-row">
           <span style="font-size:0.8rem;color:var(--text-muted)">0</span>
-          <input type="range" id="alpha0Slider" min="0" max="100" value="50" oninput="updateAlpha0()">
+          <input type="range" id="alpha0Slider" min="0" max="100" value="50" oninput="updateAlpha0()" aria-label="Power prior discount parameter alpha-zero" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
           <span style="font-size:0.8rem;color:var(--text-muted)">1</span>
           <span class="slider-val" id="alpha0Val">0.50</span>
         </div>
@@ -322,7 +442,7 @@ body.dark .webr-summary.fail { background:#7f1d1d; color:#fca5a5; }
         <label>Commensurability Parameter (&tau;<sub>comm</sub>)</label>
         <div class="slider-row">
           <span style="font-size:0.8rem;color:var(--text-muted)">Tight</span>
-          <input type="range" id="tauCommSlider" min="1" max="200" value="50" oninput="updateTauComm()">
+          <input type="range" id="tauCommSlider" min="1" max="200" value="50" oninput="updateTauComm()" aria-label="Commensurate prior tau parameter" aria-valuemin="0.01" aria-valuemax="2.0" aria-valuenow="0.50">
           <span style="font-size:0.8rem;color:var(--text-muted)">Loose</span>
           <span class="slider-val" id="tauCommVal">0.50</span>
         </div>
@@ -362,16 +482,20 @@ body.dark .webr-summary.fail { background:#7f1d1d; color:#fca5a5; }
     </div>
 
     <!-- Phase 2: Prior-Data Conflict -->
-    <div class="card fade-in" style="margin-top:18px" id="pdcCard">
-      <h2>Prior-Data Conflict Check <span class="badge">Diagnostic</span></h2>
+    <div class="card fade-in" style="margin-top:18px" id="pdcCard" role="region" aria-label="Prior-Data Conflict Diagnostics">
+      <h2>Prior-Data Conflict Check <span class="badge">Diagnostic</span> <span class="info-tooltip" tabindex="0" data-tip="Checks whether a hypothetical new observation conflicts with the MAP prior using tail probability, Box conflict measure, and Bayesian p-value.">?</span></h2>
       <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
         Enter a hypothetical new observation to check for conflict with the MAP prior.
+        Multiple diagnostic measures are computed: tail probability, Box's conflict measure, and a Bayesian p-value.
       </p>
       <div class="input-group">
-        <label id="pdcInputLabel">Observed rate (0-1):</label>
-        <input type="number" id="pdcObserved" step="0.01" min="0" max="1" value="0.2">
-        <button class="primary" onclick="runPDC()" style="padding:6px 18px">Check Conflict</button>
+        <label id="pdcInputLabel" for="pdcObserved">Observed rate (0-1):</label>
+        <input type="number" id="pdcObserved" step="0.01" min="0" max="1" value="0.2" aria-describedby="pdcHelpText">
+        <label for="pdcNewN" style="font-size:0.85rem;font-weight:600;min-width:100px">New trial N:</label>
+        <input type="number" id="pdcNewN" value="50" min="1" max="10000" aria-label="New trial sample size">
+        <button class="primary" onclick="runPDC()" style="padding:6px 18px" aria-label="Run prior-data conflict check">Check Conflict</button>
       </div>
+      <span id="pdcHelpText" class="sr-only">Enter the observed outcome from a new trial to check if it conflicts with the MAP prior</span>
       <div id="pdcContent"></div>
     </div>
 
@@ -434,16 +558,16 @@ body.dark .webr-summary.fail { background:#7f1d1d; color:#fca5a5; }
     </div>
 
     <!-- WebR Cross-Validation -->
-    <div class="card fade-in" id="webrCard" style="display:none">
+    <div class="card fade-in" id="webrCard" style="display:none" role="region" aria-label="R Cross-Validation">
       <h2>R Cross-Validation (WebR) <span class="badge" id="webrBadge">Ready</span></h2>
       <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px">
         Validate JavaScript MAP prior derivation against R metafor REML estimates.
       </p>
-      <button class="primary" id="webrRunBtn" onclick="runWebRValidation()">Validate with R</button>
+      <button class="primary" id="webrRunBtn" onclick="runWebRValidation()" aria-label="Run WebR validation">Validate with R</button>
       <div id="webrResults"></div>
     </div>
   </div>
-</div>
+</main>
 
 <script>
 'use strict';
@@ -574,14 +698,40 @@ function updateSlider() {
 
 // ---- Example Datasets ----
 function toggleExampleDropdown() {
-  document.getElementById('exampleDropdown').classList.toggle('show');
+  const dd = document.getElementById('exampleDropdown');
+  dd.classList.toggle('show');
+  const btn = document.getElementById('exampleDropdownBtn');
+  btn.setAttribute('aria-expanded', dd.classList.contains('show') ? 'true' : 'false');
 }
 function hideExampleDropdown() {
   document.getElementById('exampleDropdown').classList.remove('show');
+  document.getElementById('exampleDropdownBtn').setAttribute('aria-expanded', 'false');
 }
 // Close dropdown when clicking outside
 document.addEventListener('click', function(e) {
   if (!e.target.closest('.example-dropdown')) hideExampleDropdown();
+});
+// Keyboard support for dropdown: Escape closes, arrows navigate
+document.addEventListener('keydown', function(e) {
+  const dd = document.getElementById('exampleDropdown');
+  if (!dd.classList.contains('show')) return;
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    hideExampleDropdown();
+    document.getElementById('exampleDropdownBtn').focus();
+    return;
+  }
+  const items = Array.from(dd.querySelectorAll('[role="menuitem"]'));
+  const idx = items.indexOf(document.activeElement);
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    const next = idx < 0 ? 0 : (idx + 1) % items.length;
+    items[next].focus();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    const prev = idx <= 0 ? items.length - 1 : idx - 1;
+    items[prev].focus();
+  }
 });
 
 function loadExample(which) {
@@ -2743,9 +2893,682 @@ renderResultsAll = function() {
   document.getElementById('webrCard').style.display = '';
 };
 
+// ============================================================
+// FEATURE 1: Enhanced Morita ESS — Detailed Panel + ESS Sensitivity Curve
+// ============================================================
+
+function switchESSTab(which) {
+  const tabs = ['summary', 'detail', 'curve'];
+  for (const t of tabs) {
+    const tab = document.getElementById('essTab' + t.charAt(0).toUpperCase() + t.slice(1));
+    const panel = document.getElementById('essPanel' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (t === which) {
+      tab.setAttribute('aria-selected', 'true');
+      panel.removeAttribute('hidden');
+    } else {
+      tab.setAttribute('aria-selected', 'false');
+      panel.setAttribute('hidden', '');
+    }
+  }
+  // Render content for newly selected tab
+  if (which === 'detail' && mapResult) renderESSDetail();
+  if (which === 'curve' && mapResult) renderESSCurve();
+}
+
+// Keyboard navigation for ESS tabs
+document.addEventListener('keydown', function(e) {
+  if (!e.target.classList.contains('ess-tab')) return;
+  const tabs = Array.from(document.querySelectorAll('.ess-tab'));
+  const idx = tabs.indexOf(e.target);
+  if (idx < 0) return;
+  let newIdx = idx;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    e.preventDefault();
+    newIdx = (idx + 1) % tabs.length;
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    newIdx = (idx - 1 + tabs.length) % tabs.length;
+  } else if (e.key === 'Home') {
+    e.preventDefault(); newIdx = 0;
+  } else if (e.key === 'End') {
+    e.preventDefault(); newIdx = tabs.length - 1;
+  } else return;
+  tabs[newIdx].focus();
+  tabs[newIdx].click();
+});
+
+function renderESSDetail() {
+  if (!mapResult) return;
+  const r = mapResult;
+  const el = document.getElementById('essDetailContent');
+  const isBin = r.type === 'binary';
+
+  // Compute detailed Morita ESS breakdown
+  // Step 1: Per-patient Fisher information
+  let single_info, single_info_label;
+  if (isBin) {
+    const p = r.p_hat;
+    single_info = p * (1 - p);
+    single_info_label = 'p(1-p) = ' + p.toFixed(4) + ' x ' + (1 - p).toFixed(4) + ' = ' + single_info.toFixed(6);
+  } else {
+    const avg_sigma2 = studies.reduce((s, st) => s + st.sd * st.sd, 0) / r.k;
+    single_info = 1 / avg_sigma2;
+    single_info_label = '1/sigma^2 = 1/' + avg_sigma2.toFixed(4) + ' = ' + single_info.toFixed(6);
+  }
+
+  // Step 2: MAP prior precision (pure)
+  const map_precision = 1 / r.map_var;
+
+  // Step 3: Robust MAP curvature
+  const robust_curvature = moritaESSMixture(r.map_mu, r.map_var, r.w,
+    isBin ? 0 : r.vague_mu, isBin ? 100 : parseFloat(r.vague_se) ** 2);
+
+  // Step 4: Power prior ESS (from alpha0 slider)
+  const alpha0 = parseInt(document.getElementById('alpha0Slider').value) / 100;
+  const pp = computePowerPrior(alpha0);
+
+  // Step 5: Commensurate prior ESS
+  const comm = computeCommensuratePrior();
+
+  let html = '';
+  html += '<div class="section-title" style="margin-top:4px">Morita ESS Calculation Steps</div>';
+  html += '<p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:14px">The Morita et al. (2008) method defines ESS as the negative curvature of the log-prior density at its mode, divided by per-patient Fisher information:</p>';
+  html += '<div class="comm-formula" style="text-align:center">ESS = [-d' + String.fromCharCode(178) + 'log f(' + String.fromCharCode(952) + ')/d' + String.fromCharCode(952) + String.fromCharCode(178) + ']<sub>mode</sub> / I<sub>1</sub></div>';
+
+  html += '<div class="ess-detail-grid">';
+
+  // Per-patient info
+  html += '<div class="ess-detail-item">';
+  html += '<div class="ess-lbl">Per-Patient Fisher Information (I<sub>1</sub>)</div>';
+  html += '<div class="ess-val" style="color:var(--text-heading)">' + single_info.toFixed(6) + '</div>';
+  html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px">' + single_info_label + '</div>';
+  html += '</div>';
+
+  // MAP precision
+  html += '<div class="ess-detail-item">';
+  html += '<div class="ess-lbl">MAP Prior Precision (1/V<sub>MAP</sub>)</div>';
+  html += '<div class="ess-val" style="color:var(--map-color)">' + map_precision.toFixed(4) + '</div>';
+  html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px">V<sub>MAP</sub> = ' + String.fromCharCode(964) + String.fromCharCode(178) + ' + SE(' + String.fromCharCode(956) + ')' + String.fromCharCode(178) + ' = ' + r.tau2.toFixed(6) + ' + ' + (r.se_mu * r.se_mu).toFixed(6) + ' = ' + r.map_var.toFixed(6) + '</div>';
+  html += '</div>';
+
+  // Pure MAP ESS
+  html += '<div class="ess-detail-item">';
+  html += '<div class="ess-lbl">ESS (Pure MAP) = Precision / I<sub>1</sub></div>';
+  html += '<div class="ess-val" style="color:var(--map-color)">' + r.ess_map.toFixed(2) + '</div>';
+  html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px">' + map_precision.toFixed(4) + ' / ' + single_info.toFixed(6) + ' = ' + r.ess_map.toFixed(2) + ' patients</div>';
+  html += '<div class="ess-bar" style="width:100%;background:var(--map-color)"></div>';
+  html += '</div>';
+
+  // Robust MAP ESS
+  html += '<div class="ess-detail-item">';
+  html += '<div class="ess-lbl">ESS (Robust MAP, w=' + (r.w * 100).toFixed(0) + '%)</div>';
+  html += '<div class="ess-val" style="color:var(--robust-color)">' + r.ess_robust.toFixed(2) + '</div>';
+  html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px">Mixture curvature: ' + robust_curvature.toFixed(4) + ' / ' + single_info.toFixed(6) + ' = ' + r.ess_robust.toFixed(2) + ' patients</div>';
+  html += '<div class="ess-bar" style="width:' + (r.ess_robust / Math.max(r.ess_map, 1) * 100).toFixed(1) + '%;background:var(--robust-color)"></div>';
+  html += '</div>';
+
+  // Power prior ESS
+  if (pp) {
+    html += '<div class="ess-detail-item">';
+    html += '<div class="ess-lbl">ESS (Power Prior, ' + String.fromCharCode(945) + '<sub>0</sub>=' + alpha0.toFixed(2) + ')</div>';
+    html += '<div class="ess-val" style="color:var(--prior-color)">' + pp.ess.toFixed(2) + '</div>';
+    html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px">' + String.fromCharCode(945) + '<sub>0</sub> x N<sub>hist</sub> = ' + alpha0.toFixed(2) + ' x ' + studies.reduce((s, st) => s + st.n, 0) + ' = ' + pp.ess.toFixed(2) + '</div>';
+    html += '<div class="ess-bar" style="width:' + Math.min(100, pp.ess / Math.max(r.ess_map, 1) * 100).toFixed(1) + '%;background:var(--prior-color)"></div>';
+    html += '</div>';
+  }
+
+  // Commensurate ESS
+  if (comm && isFinite(comm.ess)) {
+    html += '<div class="ess-detail-item">';
+    html += '<div class="ess-lbl">ESS (Commensurate, ' + String.fromCharCode(964) + '<sub>c</sub>=' + comm.tauComm.toFixed(2) + ')</div>';
+    html += '<div class="ess-val" style="color:var(--success)">' + comm.ess.toFixed(2) + '</div>';
+    html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px">1/(' + String.fromCharCode(964) + '<sub>c</sub>' + String.fromCharCode(178) + ' x I<sub>1</sub>) = 1/(' + (comm.tauComm * comm.tauComm).toFixed(4) + ' x ' + single_info.toFixed(6) + ')</div>';
+    html += '<div class="ess-bar" style="width:' + Math.min(100, comm.ess / Math.max(r.ess_map, 1) * 100).toFixed(1) + '%;background:var(--success)"></div>';
+    html += '</div>';
+  }
+
+  html += '</div>';
+
+  // Regulatory interpretation
+  html += '<div style="margin-top:14px;padding:12px 16px;border-radius:var(--radius);background:var(--accent-light);border:1px solid var(--border)">';
+  html += '<p style="font-size:0.88rem;font-weight:700;color:var(--text-heading);margin-bottom:6px">Regulatory Interpretation</p>';
+  html += '<p style="font-size:0.85rem;color:var(--text)">';
+  if (r.ess_robust >= 30) {
+    html += 'The robust MAP prior contributes a substantial ESS of ' + r.ess_robust.toFixed(1) + ' patients. This is equivalent to enrolling ' + r.ess_robust.toFixed(0) + ' patients in the control arm, enabling significant sample size reduction. FDA typically accepts ESS values of this magnitude for well-justified historical borrowing.';
+  } else if (r.ess_robust >= 10) {
+    html += 'The robust MAP prior contributes a moderate ESS of ' + r.ess_robust.toFixed(1) + ' patients. This provides meaningful but conservative borrowing. Regulatory agencies generally view this favorably as it demonstrates appropriate skepticism.';
+  } else {
+    html += 'The robust MAP prior contributes a modest ESS of ' + r.ess_robust.toFixed(1) + ' patients. Limited borrowing suggests either high heterogeneity in historical data or a low informative weight. Consider reviewing the data consistency or adjusting the robustification weight.';
+  }
+  html += '</p></div>';
+
+  el.innerHTML = html;
+}
+
+function renderESSCurve() {
+  if (!mapResult) return;
+  const r = mapResult;
+  const isBin = r.type === 'binary';
+
+  // Compute ESS for weight values from 0 to 100
+  const nPts = 50;
+  const weights = [];
+  const essValues = [];
+
+  // Per-patient Fisher info
+  let single_info;
+  if (isBin) {
+    single_info = r.p_hat * (1 - r.p_hat);
+  } else {
+    const avg_sigma2 = studies.reduce((s, st) => s + st.sd * st.sd, 0) / r.k;
+    single_info = 1 / avg_sigma2;
+  }
+
+  const vague_mu = isBin ? 0 : r.vague_mu;
+  const vague_var = isBin ? 100 : parseFloat(r.vague_se) ** 2;
+
+  for (let i = 0; i <= nPts; i++) {
+    const wt = i / nPts;
+    weights.push(wt);
+    if (wt < 0.001) {
+      // Pure vague: ESS ~= 0 (precision of vague / info)
+      essValues.push(Math.max(0, (1 / vague_var) / single_info));
+    } else if (wt > 0.999) {
+      essValues.push(r.ess_map);
+    } else {
+      const curv = moritaESSMixture(r.map_mu, r.map_var, wt, vague_mu, vague_var);
+      essValues.push(Math.max(0, curv / single_info));
+    }
+  }
+
+  const container = document.getElementById('essCurvePlot');
+  const W = Math.max(container.clientWidth - 32, 500);
+  const H = 260;
+  const margin = { left: 60, right: 30, top: 20, bottom: 40 };
+  const pW = W - margin.left - margin.right;
+  const pH = H - margin.top - margin.bottom;
+
+  const yMax = Math.max(...essValues) * 1.15;
+  const xScale = x => margin.left + x * pW;
+  const yScale = y => margin.top + (1 - y / yMax) * pH;
+
+  let svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" style="font-family:var(--font)" role="img" aria-label="ESS sensitivity curve showing how effective sample size varies with informative weight">';
+
+  // Grid
+  const nYTicks = 5;
+  for (let i = 0; i <= nYTicks; i++) {
+    const yVal = yMax * i / nYTicks;
+    const y = yScale(yVal);
+    svg += '<line x1="' + margin.left + '" y1="' + y + '" x2="' + (margin.left + pW) + '" y2="' + y + '" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="3,3"/>';
+    svg += '<text x="' + (margin.left - 8) + '" y="' + (y + 3) + '" text-anchor="end" font-size="9" fill="var(--text-muted)">' + yVal.toFixed(0) + '</text>';
+  }
+
+  // X-axis ticks
+  for (let i = 0; i <= 10; i++) {
+    const xVal = i / 10;
+    const x = xScale(xVal);
+    svg += '<text x="' + x + '" y="' + (H - 18) + '" text-anchor="middle" font-size="9" fill="var(--text-muted)">' + (xVal * 100).toFixed(0) + '%</text>';
+  }
+
+  // Axis labels
+  svg += '<text x="' + (margin.left + pW / 2) + '" y="' + (H - 2) + '" text-anchor="middle" font-size="10" fill="var(--text-muted)">Informative Weight (w)</text>';
+  svg += '<text x="12" y="' + (margin.top + pH / 2) + '" text-anchor="middle" font-size="10" fill="var(--text-muted)" transform="rotate(-90,12,' + (margin.top + pH / 2) + ')">ESS (patients)</text>';
+
+  // ESS curve - filled area
+  let fillPath = 'M ' + xScale(weights[0]) + ' ' + yScale(0);
+  for (let i = 0; i < weights.length; i++) {
+    fillPath += ' L ' + xScale(weights[i]) + ' ' + yScale(essValues[i]);
+  }
+  fillPath += ' L ' + xScale(weights[weights.length - 1]) + ' ' + yScale(0) + ' Z';
+  svg += '<path d="' + fillPath + '" fill="var(--accent)" fill-opacity="0.1"/>';
+
+  // ESS curve line
+  let linePath = 'M ' + xScale(weights[0]) + ' ' + yScale(essValues[0]);
+  for (let i = 1; i < weights.length; i++) {
+    linePath += ' L ' + xScale(weights[i]) + ' ' + yScale(essValues[i]);
+  }
+  svg += '<path d="' + linePath + '" fill="none" stroke="var(--accent)" stroke-width="2.5"/>';
+
+  // Current weight marker
+  const currentW = r.w;
+  const currentESS = r.ess_robust;
+  svg += '<line x1="' + xScale(currentW) + '" y1="' + margin.top + '" x2="' + xScale(currentW) + '" y2="' + yScale(0) + '" stroke="var(--robust-color)" stroke-width="1.5" stroke-dasharray="5,3"/>';
+  svg += '<circle cx="' + xScale(currentW) + '" cy="' + yScale(currentESS) + '" r="5" fill="var(--robust-color)" stroke="#fff" stroke-width="2"/>';
+  svg += '<text x="' + (xScale(currentW) + 8) + '" y="' + (yScale(currentESS) - 8) + '" font-size="10" font-weight="700" fill="var(--robust-color)">w=' + (currentW * 100).toFixed(0) + '%, ESS=' + currentESS.toFixed(1) + '</text>';
+
+  // Pure MAP marker at w=100%
+  svg += '<circle cx="' + xScale(1) + '" cy="' + yScale(r.ess_map) + '" r="4" fill="var(--map-color)" stroke="#fff" stroke-width="1.5"/>';
+  svg += '<text x="' + (xScale(1) - 8) + '" y="' + (yScale(r.ess_map) - 8) + '" text-anchor="end" font-size="9" font-weight="600" fill="var(--map-color)">Pure MAP: ' + r.ess_map.toFixed(1) + '</text>';
+
+  svg += '</svg>';
+  container.innerHTML = svg;
+
+  document.getElementById('essCurveLegend').innerHTML =
+    '<span class="leg"><span class="leg-line" style="background:var(--accent)"></span>ESS Curve (Morita Method)</span>' +
+    '<span class="leg"><span class="leg-line" style="background:var(--robust-color)"></span>Current Weight (w=' + (currentW * 100).toFixed(0) + '%)</span>' +
+    '<span class="leg"><span class="leg-line" style="background:var(--map-color)"></span>Pure MAP (w=100%)</span>';
+}
+
+// ============================================================
+// FEATURE 2: Enhanced Robust Mixture Prior — Live ESS impact on slider move
+// ============================================================
+
+// Override updateSlider to also update ESS in real-time
+const _origUpdateSlider = updateSlider;
+function updateSlider() {
+  const val = parseInt(document.getElementById('wSlider').value);
+  document.getElementById('wVal').textContent = val + '%';
+  // Update ARIA
+  document.getElementById('wSlider').setAttribute('aria-valuenow', val);
+
+  // If we have a result, recompute and show live ESS preview
+  if (mapResult) {
+    const w = val / 100;
+    const r = mapResult;
+    const isBin = r.type === 'binary';
+    let single_info;
+    if (isBin) {
+      single_info = r.p_hat * (1 - r.p_hat);
+    } else {
+      const avg_sigma2 = studies.reduce((s2, st) => s2 + st.sd * st.sd, 0) / r.k;
+      single_info = 1 / avg_sigma2;
+    }
+    const vague_mu = isBin ? 0 : r.vague_mu;
+    const vague_var = isBin ? 100 : parseFloat(r.vague_se) ** 2;
+    let liveESS;
+    if (w < 0.001) {
+      liveESS = Math.max(0, (1 / vague_var) / single_info);
+    } else if (w > 0.999) {
+      liveESS = r.ess_map;
+    } else {
+      const curv = moritaESSMixture(r.map_mu, r.map_var, w, vague_mu, vague_var);
+      liveESS = Math.max(0, curv / single_info);
+    }
+    // Update the live status for screen readers
+    announce('Informative weight ' + val + '%, ESS approximately ' + liveESS.toFixed(1) + ' patients');
+
+    // Show live ESS indicator inline
+    let liveEl = document.getElementById('wLiveESS');
+    if (!liveEl) {
+      liveEl = document.createElement('div');
+      liveEl.id = 'wLiveESS';
+      liveEl.style.cssText = 'font-size:0.82rem;margin-top:6px;font-weight:600;transition:all 0.15s';
+      const sliderGroup = document.getElementById('wSlider').closest('.slider-group');
+      if (sliderGroup) sliderGroup.appendChild(liveEl);
+    }
+    liveEl.innerHTML = '<span style="color:var(--text-muted)">Live ESS Preview:</span> <span style="color:var(--robust-color);font-family:var(--mono)">' + liveESS.toFixed(1) + ' patients</span>';
+  }
+}
+
+// ============================================================
+// FEATURE 3: Enhanced Prior-Data Conflict Detection
+// ============================================================
+
+// Auto-detect conflict when results are rendered
+function runAutoConflictDetection() {
+  if (!mapResult) return;
+  const r = mapResult;
+  const isBin = r.type === 'binary';
+  const banner = document.getElementById('pdcAutoBanner');
+
+  // Check each study's individual conflict with the overall MAP
+  let maxConflict = 0;
+  let conflictingStudies = [];
+
+  for (let i = 0; i < studies.length; i++) {
+    const dev = Math.abs(r.yi[i] - r.map_mu);
+    const studySE = Math.sqrt(r.vi[i]);
+    // Standardized deviation (z-score relative to MAP)
+    const zScore = dev / Math.max(0.001, r.map_se);
+    const tailP = 2 * (1 - normalCDF(zScore));
+    if (tailP < 0.05) {
+      conflictingStudies.push({ study: studies[i].trial, z: zScore, tailP: tailP });
+    }
+    if (zScore > maxConflict) maxConflict = zScore;
+  }
+
+  // Also check internal consistency using Cochran Q p-value
+  const qPval = 1 - chi2CDF(r.Q, r.k - 1);
+
+  let severity, lightClass, msg;
+  if (conflictingStudies.length === 0 && qPval >= 0.10) {
+    severity = 'green';
+    lightClass = 'traffic-green';
+    msg = '<span class="traffic-light traffic-green"></span> <strong>No prior-data conflict detected.</strong> All historical studies are consistent with the MAP estimate (Cochran Q p=' + qPval.toFixed(3) + '). Borrowing is well-supported.';
+  } else if (conflictingStudies.length <= 1 && qPval >= 0.01) {
+    severity = 'yellow';
+    lightClass = 'traffic-yellow';
+    msg = '<span class="traffic-light traffic-yellow"></span> <strong>Borderline consistency.</strong> ';
+    if (conflictingStudies.length === 1) {
+      msg += 'Study "' + escapeHtml(conflictingStudies[0].study) + '" shows some tension (z=' + conflictingStudies[0].z.toFixed(2) + '). ';
+    }
+    msg += 'Cochran Q p=' + qPval.toFixed(3) + '. Consider increasing the vague component weight.';
+  } else {
+    severity = 'red';
+    lightClass = 'traffic-red';
+    msg = '<span class="traffic-light traffic-red"></span> <strong>Potential prior-data conflict.</strong> ';
+    if (conflictingStudies.length > 0) {
+      msg += conflictingStudies.length + ' studies show significant deviation from MAP: ';
+      msg += conflictingStudies.map(s => '"' + escapeHtml(s.study) + '" (z=' + s.z.toFixed(2) + ')').join(', ') + '. ';
+    }
+    msg += 'Cochran Q p=' + qPval.toFixed(4) + '. <strong>Recommend robust MAP with higher vague weight or power prior with low ' + String.fromCharCode(945) + '<sub>0</sub>.</strong>';
+  }
+
+  banner.className = 'pdc-auto-banner ' + severity;
+  banner.innerHTML = msg;
+  banner.style.display = '';
+}
+
+// Chi-squared CDF approximation (Wilson-Hilferty)
+function chi2CDF(x, df) {
+  if (df <= 0 || x <= 0) return 0;
+  // Wilson-Hilferty approximation
+  const z = Math.pow(x / df, 1 / 3) - (1 - 2 / (9 * df));
+  const denom = Math.sqrt(2 / (9 * df));
+  if (denom < 1e-15) return x >= df ? 1 : 0;
+  return normalCDF(z / denom);
+}
+
+// Enhanced runPDC with multiple diagnostic measures
+const _origRunPDC = runPDC;
+function runPDC() {
+  if (!mapResult) return;
+  const r = mapResult;
+  const isBin = r.type === 'binary';
+
+  const obsRaw = parseFloat(document.getElementById('pdcObserved').value);
+  if (!isFinite(obsRaw)) return;
+
+  const newN = parseInt(document.getElementById('pdcNewN').value) || 50;
+
+  let obs_logit, obs_display;
+  if (isBin) {
+    const obs_p = Math.max(0.001, Math.min(0.999, obsRaw));
+    obs_logit = Math.log(obs_p / (1 - obs_p));
+    obs_display = (obs_p * 100).toFixed(1) + '%';
+  } else {
+    obs_logit = obsRaw;
+    obs_display = obsRaw.toFixed(3);
+  }
+
+  // ---- Diagnostic 1: Tail probability ----
+  const dev = Math.abs(obs_logit - r.map_mu);
+  const tailProb = 2 * (1 - normalCDF(dev / r.map_se));
+
+  // ---- Diagnostic 2: Box's conflict measure ----
+  // Box (1980): -2 * [log p(y_new | MAP) - log p(y_new | vague)]
+  // For normal priors: difference in log-likelihoods
+  const logLik_MAP = -0.5 * Math.log(2 * Math.PI * r.map_var) - 0.5 * (obs_logit - r.map_mu) ** 2 / r.map_var;
+  const vague_var = isBin ? 100 : parseFloat(r.vague_se) ** 2;
+  const logLik_vague = -0.5 * Math.log(2 * Math.PI * vague_var) - 0.5 * (obs_logit - r.vague_mu) ** 2 / vague_var;
+  const boxMeasure = -2 * (logLik_MAP - logLik_vague);
+  // Positive Box measure = MAP fits worse than vague -> conflict
+
+  // ---- Diagnostic 3: Bayesian p-value (calibrated) ----
+  // P(|T(y_rep)| >= |T(y_obs)|) where T = standardized residual
+  const standardizedResid = (obs_logit - r.map_mu) / r.map_se;
+  const bayesPval = 2 * (1 - normalCDF(Math.abs(standardizedResid)));
+
+  // ---- Diagnostic 4: Posterior borrowing weight ----
+  // Under a mixture model: what posterior weight would the MAP component get?
+  // P(MAP | data) proportional to w * N(obs | MAP_mu, MAP_var + se_new^2)
+  // P(vague | data) proportional to (1-w) * N(obs | vague_mu, vague_var + se_new^2)
+  let se_new_sq;
+  if (isBin) {
+    const p = Math.max(0.01, Math.min(0.99, obsRaw));
+    se_new_sq = 1 / (newN * p * (1 - p));
+  } else {
+    const avg_sd = Math.sqrt(studies.reduce((s, st) => s + st.sd * st.sd, 0) / r.k);
+    se_new_sq = (avg_sd * avg_sd) / newN;
+  }
+  const lik_map = normalPDF(obs_logit, r.map_mu, Math.sqrt(r.map_var + se_new_sq));
+  const lik_vague = normalPDF(obs_logit, r.vague_mu, Math.sqrt(vague_var + se_new_sq));
+  const postW_map = (r.w * lik_map) / (r.w * lik_map + (1 - r.w) * lik_vague);
+
+  // Traffic light
+  let lightClass, lightLabel, lightDesc;
+  if (tailProb >= 0.20 && boxMeasure < 3) {
+    lightClass = 'traffic-green';
+    lightLabel = 'No Conflict';
+    lightDesc = 'The observed value is well within the MAP prior. All diagnostics agree: no evidence of prior-data conflict.';
+  } else if (tailProb >= 0.05 || (boxMeasure < 6 && tailProb >= 0.01)) {
+    lightClass = 'traffic-yellow';
+    lightLabel = 'Possible Conflict';
+    lightDesc = 'Some tension between the observed data and the MAP prior. Consider reviewing the robustification weight.';
+  } else {
+    lightClass = 'traffic-red';
+    lightLabel = 'Prior-Data Conflict';
+    lightDesc = 'Strong prior-data conflict detected. The observed data is highly inconsistent with the MAP prior. Automatic robust MAP borrowing will be heavily reduced. Consider using a power prior with low alpha or increasing the vague component.';
+  }
+
+  let html = '<div style="margin-top:12px">';
+  html += '<p style="font-size:0.95rem"><span class="traffic-light ' + lightClass + '"></span><strong>' + lightLabel + '</strong></p>';
+
+  // Multi-measure diagnostic table
+  html += '<table class="oc-table" style="margin:12px 0">';
+  html += '<thead><tr><th style="text-align:left">Diagnostic Measure</th><th>Value</th><th>Interpretation</th></tr></thead>';
+  html += '<tbody>';
+  html += '<tr><td style="text-align:left">Tail Probability</td><td>' + (tailProb * 100).toFixed(2) + '%</td><td style="text-align:left">' + (tailProb >= 0.20 ? 'Consistent' : tailProb >= 0.05 ? 'Borderline' : '<strong>Conflict</strong>') + '</td></tr>';
+  html += '<tr><td style="text-align:left">Box Conflict Measure</td><td>' + boxMeasure.toFixed(3) + '</td><td style="text-align:left">' + (boxMeasure < 3 ? 'Consistent (< 3)' : boxMeasure < 6 ? 'Borderline (3-6)' : '<strong>Conflict (&gt; 6)</strong>') + '</td></tr>';
+  html += '<tr><td style="text-align:left">Bayesian p-value</td><td>' + bayesPval.toFixed(4) + '</td><td style="text-align:left">' + (bayesPval >= 0.10 ? 'Consistent' : bayesPval >= 0.025 ? 'Borderline' : '<strong>Conflict</strong>') + '</td></tr>';
+  html += '<tr><td style="text-align:left">Standardized Residual</td><td>' + standardizedResid.toFixed(3) + '</td><td style="text-align:left">' + (Math.abs(standardizedResid) < 2 ? 'Within 2 SD' : Math.abs(standardizedResid) < 3 ? 'Marginal (2-3 SD)' : '<strong>Extreme (&gt;3 SD)</strong>') + '</td></tr>';
+  html += '<tr><td style="text-align:left">Posterior MAP Weight</td><td>' + (postW_map * 100).toFixed(1) + '%</td><td style="text-align:left">' + (postW_map > 0.5 ? 'MAP dominates: data consistent' : '<strong>Vague dominates: data conflicts</strong>') + '</td></tr>';
+  html += '</tbody></table>';
+
+  html += '<p style="font-size:0.85rem;color:var(--text-muted)">' + lightDesc + '</p>';
+
+  // Dynamic borrowing fraction visualization
+  html += '<div style="margin-top:14px">';
+  html += '<div style="font-size:0.88rem;font-weight:600;margin-bottom:8px">Dynamic Borrowing Fraction (Schmidli Method)</div>';
+  html += '<div style="display:flex;align-items:center;gap:6px">';
+  html += '<span style="font-size:0.82rem;min-width:80px;text-align:right">MAP (' + (postW_map * 100).toFixed(0) + '%)</span>';
+  html += '<div style="flex:1;display:flex;height:24px;border-radius:4px;overflow:hidden">';
+  html += '<div style="width:' + (postW_map * 100).toFixed(1) + '%;background:var(--map-color);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.72rem;font-weight:700">' + (postW_map * 100 >= 10 ? (postW_map * 100).toFixed(0) + '%' : '') + '</div>';
+  html += '<div style="width:' + ((1 - postW_map) * 100).toFixed(1) + '%;background:var(--vague-color);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.72rem;font-weight:700">' + ((1 - postW_map) * 100 >= 10 ? ((1 - postW_map) * 100).toFixed(0) + '%' : '') + '</div>';
+  html += '</div>';
+  html += '<span style="font-size:0.82rem;min-width:80px">Vague (' + ((1 - postW_map) * 100).toFixed(0) + '%)</span>';
+  html += '</div></div>';
+
+  // Density overlay plot
+  const W = 500, H_plot = 160;
+  const margin = { left: 40, right: 20, top: 15, bottom: 25 };
+  const pW = W - margin.left - margin.right;
+  const pH_plot = H_plot - margin.top - margin.bottom;
+
+  const xMin = Math.min(r.map_mu - 4 * r.map_se, obs_logit - r.map_se);
+  const xMax = Math.max(r.map_mu + 4 * r.map_se, obs_logit + r.map_se);
+  const nPts = 150;
+  const dx = (xMax - xMin) / nPts;
+  const xs = [], dens = [];
+  let yMaxD = 0;
+  for (let i = 0; i <= nPts; i++) {
+    const x = xMin + i * dx;
+    xs.push(x);
+    const d = normalPDF(x, r.map_mu, r.map_se);
+    dens.push(d);
+    if (d > yMaxD) yMaxD = d;
+  }
+  yMaxD *= 1.15;
+
+  const xScale = x => margin.left + ((x - xMin) / (xMax - xMin)) * pW;
+  const yScaleP = y => margin.top + (1 - y / yMaxD) * pH_plot;
+
+  let svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H_plot + '" style="font-family:var(--font);max-width:500px" role="img" aria-label="Prior-data conflict density overlay plot">';
+
+  let fillPath = 'M ' + xScale(xs[0]) + ' ' + yScaleP(0);
+  for (let i = 0; i < xs.length; i++) fillPath += ' L ' + xScale(xs[i]) + ' ' + yScaleP(dens[i]);
+  fillPath += ' L ' + xScale(xs[xs.length - 1]) + ' ' + yScaleP(0) + ' Z';
+  svg += '<path d="' + fillPath + '" fill="var(--map-color)" fill-opacity="0.12" stroke="var(--map-color)" stroke-width="1.5"/>';
+
+  // Shade rejection region
+  for (let i = 0; i < xs.length; i++) {
+    if (Math.abs(xs[i] - r.map_mu) >= dev) {
+      const barW = xScale(xs[0] + dx) - xScale(xs[0]);
+      svg += '<rect x="' + (xScale(xs[i]) - barW / 2) + '" y="' + yScaleP(dens[i]) + '" width="' + barW + '" height="' + (yScaleP(0) - yScaleP(dens[i])) + '" fill="var(--danger)" fill-opacity="0.25"/>';
+    }
+  }
+
+  // Observed value line
+  svg += '<line x1="' + xScale(obs_logit) + '" y1="' + margin.top + '" x2="' + xScale(obs_logit) + '" y2="' + (margin.top + pH_plot) + '" stroke="var(--danger)" stroke-width="2" stroke-dasharray="5,3"/>';
+  svg += '<text x="' + xScale(obs_logit) + '" y="' + (margin.top - 3) + '" text-anchor="middle" font-size="9" font-weight="700" fill="var(--danger)">Observed: ' + obs_display + '</text>';
+
+  // X-axis labels
+  const nTicks = 5;
+  for (let i = 0; i <= nTicks; i++) {
+    const v = xMin + (xMax - xMin) * i / nTicks;
+    const x = xScale(v);
+    let label = v.toFixed(2);
+    if (isBin) label = (1 / (1 + Math.exp(-v)) * 100).toFixed(0) + '%';
+    svg += '<text x="' + x + '" y="' + (H_plot - 5) + '" text-anchor="middle" font-size="8" fill="var(--text-muted)">' + label + '</text>';
+  }
+
+  svg += '</svg>';
+  html += '<div class="plot-container" style="margin-top:12px">' + svg + '</div>';
+  html += '</div>';
+
+  document.getElementById('pdcContent').innerHTML = html;
+  announce('Prior-data conflict check complete: ' + lightLabel);
+}
+
+// ============================================================
+// FEATURE: Study-Level Borrowing Weights Heatmap
+// ============================================================
+function renderBorrowingHeatmap() {
+  if (!mapResult) return;
+  const r = mapResult;
+  const el = document.getElementById('borrowHeatmapContent');
+
+  // Compute normalized weights
+  const wi = r.vi.map(v => 1 / (v + r.tau2));
+  const sumW = wi.reduce((a, b) => a + b, 0);
+  const normW = wi.map(w => w / sumW);
+
+  let html = '<div class="borrow-heatmap">';
+  for (let i = 0; i < studies.length; i++) {
+    const pct = (normW[i] * 100).toFixed(1);
+    const intensity = normW[i] / Math.max(...normW);
+    // Color: interpolate from light blue to dark blue
+    const r_c = Math.round(14 + (1 - intensity) * 200);
+    const g_c = Math.round(165 + (1 - intensity) * 80);
+    const b_c = Math.round(233);
+    const textColor = intensity > 0.6 ? '#fff' : 'var(--text)';
+    html += '<div class="borrow-cell" style="background:rgba(' + r_c + ',' + g_c + ',' + b_c + ',' + (0.3 + intensity * 0.7).toFixed(2) + ');color:' + textColor + '" title="' + escapeHtml(studies[i].trial) + ': ' + pct + '%">';
+    html += '<div style="font-size:0.68rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(studies[i].trial.length > 12 ? studies[i].trial.slice(0, 12) + '..' : studies[i].trial) + '</div>';
+    html += '<div>' + pct + '%</div>';
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // Bar chart view
+  html += '<div style="margin-top:12px">';
+  const maxW = Math.max(...normW);
+  for (let i = 0; i < studies.length; i++) {
+    const pct = (normW[i] * 100).toFixed(1);
+    const barPct = (normW[i] / maxW * 100).toFixed(1);
+    html += '<div style="display:flex;align-items:center;gap:8px;margin:3px 0">';
+    html += '<span style="width:140px;text-align:right;font-size:0.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escapeHtml(studies[i].trial) + '">' + escapeHtml(studies[i].trial) + '</span>';
+    html += '<div style="flex:1;height:16px;background:var(--border);border-radius:3px;overflow:hidden">';
+    html += '<div style="width:' + barPct + '%;height:100%;background:var(--map-color);border-radius:3px;transition:width 0.3s"></div>';
+    html += '</div>';
+    html += '<span style="font-family:var(--mono);font-size:0.78rem;min-width:45px;font-weight:600;color:var(--map-color)">' + pct + '%</span>';
+    html += '</div>';
+  }
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+// ============================================================
+// Accessibility: Announce updates to screen readers
+// ============================================================
+function announce(msg) {
+  const el = document.getElementById('liveStatus');
+  if (el) {
+    el.textContent = msg;
+    // Clear after 3 seconds to allow re-announcement
+    setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 3000);
+  }
+}
+
+// ============================================================
+// Override renderResultsAll to include all new features
+// ============================================================
+const _origRenderResultsAll2 = renderResultsAll;
+renderResultsAll = function() {
+  _origRenderResultsAll2();
+  // New Phase 2 features
+  renderESSDetail();
+  renderESSCurve();
+  renderBorrowingHeatmap();
+  runAutoConflictDetection();
+  // Reset ESS tab to summary
+  switchESSTab('summary');
+  // Announce completion
+  announce('MAP prior derivation complete. ' + mapResult.k + ' studies analyzed. ESS is ' + mapResult.ess_robust.toFixed(1) + ' patients.');
+};
+
+// ============================================================
+// FEATURE: Example Datasets — Auto-load on first visit
+// ============================================================
+const DEMO_DATASETS = {
+  crohns: {
+    label: "Crohn's Disease Placebo Rates (Binary)",
+    type: 'binary',
+    description: 'Historical placebo arm response rates from Crohn\'s disease clinical trials. Based on Neuenschwander et al. (2010).',
+    data: [
+      { trial: 'Study A (2002)', events: 15, n: 80 },
+      { trial: 'Study B (2004)', events: 22, n: 120 },
+      { trial: 'Study C (2005)', events: 18, n: 95 },
+      { trial: 'Study D (2007)', events: 25, n: 150 },
+      { trial: 'Study E (2008)', events: 12, n: 70 },
+      { trial: 'Study F (2010)', events: 30, n: 175 },
+      { trial: 'Study G (2011)', events: 20, n: 110 },
+      { trial: 'Study H (2013)', events: 28, n: 160 },
+    ]
+  },
+  uc: {
+    label: 'Ulcerative Colitis CDAI Scores (Continuous)',
+    type: 'continuous',
+    description: 'Historical control arm CDAI score improvements from UC clinical trials.',
+    data: [
+      { trial: 'ACT-1 (2005)', mean: 5.2, sd: 2.1, n: 121 },
+      { trial: 'ACT-2 (2005)', mean: 4.8, sd: 2.3, n: 123 },
+      { trial: 'GEMINI 1 (2013)', mean: 5.5, sd: 1.9, n: 149 },
+      { trial: 'OCTAVE 1 (2018)', mean: 5.1, sd: 2.0, n: 112 },
+      { trial: 'UNIFI (2019)', mean: 4.9, sd: 2.2, n: 189 },
+      { trial: 'ELEVATE (2022)', mean: 5.3, sd: 1.8, n: 158 },
+    ]
+  },
+  onco: {
+    label: 'Oncology ORR Historical Controls (Binary)',
+    type: 'binary',
+    description: 'Historical control arm objective response rates from lung cancer immunotherapy trials.',
+    data: [
+      { trial: 'Keynote-024 ctrl (2016)', events: 31, n: 154 },
+      { trial: 'Checkmate-078 ctrl (2018)', events: 18, n: 131 },
+      { trial: 'Impower-110 ctrl (2020)', events: 28, n: 163 },
+      { trial: 'Rationale-301 ctrl (2022)', events: 24, n: 152 },
+      { trial: 'JUPITER-02 ctrl (2021)', events: 21, n: 140 },
+    ]
+  }
+};
+
+// ---- Auto-load demo and auto-derive on first page load ----
+function autoLoadDemo() {
+  loadExample('crohns');
+  // Auto-run derivation after a short delay to let DOM settle
+  setTimeout(function() {
+    if (studies.length >= 2) {
+      runMAP();
+      announce("Demo data loaded: Crohn's disease placebo rates with 8 studies. MAP prior derived automatically.");
+    }
+  }, 100);
+}
+
 // ---- Init ----
 renderHeader();
-addRows(3);
+// Auto-load demo data on first visit instead of empty rows
+autoLoadDemo();
 </script>
 </body>
 </html>
