@@ -331,6 +331,8 @@ input:focus-visible, select:focus-visible, button:focus-visible {
       <button onclick="addRow()">+ Add Study</button>
       <button onclick="addRows(3)">+ Add 3</button>
       <button onclick="clearAll()">Clear All</button>
+      <button onclick="document.getElementById('csvFileInput').click()" aria-label="Import data from CSV file">Import CSV</button>
+      <input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" style="display:none" onchange="handleCSVImport(event)">
     </div>
   </div>
 
@@ -662,6 +664,107 @@ function addRow(d) {
 }
 function addRows(n) { for(let i=0;i<n;i++) addRow(); }
 function clearAll() { document.getElementById('dataBody').innerHTML=''; rowNum=0; studies=[]; sync(); }
+
+// ---- CSV Import with auto-detection ----
+function handleCSVImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = ''; // reset so same file can be re-imported
+  const reader = new FileReader();
+  reader.onload = function(e) { parseCSVAndLoad(e.target.result, file.name); };
+  reader.readAsText(file);
+}
+
+function parseCSVAndLoad(text, fileName) {
+  // Detect delimiter (comma, tab, semicolon)
+  const firstLine = text.split(/\r?\n/)[0];
+  const delim = firstLine.includes('\t') ? '\t' : firstLine.includes(';') ? ';' : ',';
+  const lines = text.split(/\r?\n/).filter(l => l.trim() && !l.startsWith('#'));
+  if (lines.length < 2) { alert('CSV must have at least a header row and one data row.'); return; }
+
+  // Parse header with fuzzy matching
+  const rawHeaders = lines[0].split(delim).map(h => h.trim().replace(/^["']|["']$/g, '').toLowerCase());
+
+  // Auto-detect column mapping
+  const COL_MAP = {
+    trial: ['trial', 'study', 'name', 'label', 'id', 'author', 'source'],
+    events: ['events', 'event', 'successes', 'success', 'r', 'x', 'cases', 'responders'],
+    n: ['n', 'total', 'sample', 'sample_size', 'samplesize', 'patients', 'enrolled'],
+    mean: ['mean', 'avg', 'average', 'estimate', 'yi', 'effect', 'value', 'theta'],
+    sd: ['sd', 'std', 'stdev', 'se', 'sei', 'stderr', 'standard_deviation']
+  };
+
+  function findCol(aliases) {
+    for (const alias of aliases) {
+      const idx = rawHeaders.indexOf(alias);
+      if (idx !== -1) return idx;
+    }
+    // Partial match fallback
+    for (const alias of aliases) {
+      const idx = rawHeaders.findIndex(h => h.includes(alias));
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  }
+
+  const colTrial  = findCol(COL_MAP.trial);
+  const colEvents = findCol(COL_MAP.events);
+  const colN      = findCol(COL_MAP.n);
+  const colMean   = findCol(COL_MAP.mean);
+  const colSD     = findCol(COL_MAP.sd);
+
+  // Auto-detect endpoint type from columns present
+  const hasBinary     = colEvents !== -1 && colN !== -1;
+  const hasContinuous = colMean !== -1 && colSD !== -1 && colN !== -1;
+
+  if (!hasBinary && !hasContinuous) {
+    alert('Could not auto-detect columns.\n\nBinary: needs "events" + "n" columns.\nContinuous: needs "mean" + "sd" + "n" columns.\n\nFound headers: ' + rawHeaders.join(', '));
+    return;
+  }
+
+  // Set endpoint type to match detected data
+  const epSelect = document.getElementById('endpointType');
+  if (hasBinary && !hasContinuous) {
+    epSelect.value = 'binary';
+  } else if (hasContinuous && !hasBinary) {
+    epSelect.value = 'continuous';
+  }
+  // If both detected, keep current selection
+  epSelect.dispatchEvent(new Event('change'));
+
+  // Clear existing data and load
+  clearAll();
+  const type = getEndpointType();
+  let loaded = 0;
+
+  for (let i = 1; i < lines.length; i++) {
+    const cells = lines[i].split(delim).map(c => c.trim().replace(/^["']|["']$/g, ''));
+    if (cells.length < 2) continue;
+
+    const trial = colTrial !== -1 ? cells[colTrial] : ('Study ' + i);
+
+    if (type === 'binary') {
+      const events = parseInt(cells[colEvents]);
+      const n = parseInt(cells[colN]);
+      if (isFinite(events) && isFinite(n) && n > 0) {
+        addRow({ trial: trial, events: events, n: n });
+        loaded++;
+      }
+    } else {
+      const mean = parseFloat(cells[colMean]);
+      const sd   = parseFloat(cells[colSD]);
+      const n    = parseInt(cells[colN]);
+      if (isFinite(mean) && isFinite(sd) && isFinite(n) && n > 0 && sd > 0) {
+        addRow({ trial: trial, mean: mean, sd: sd, n: n });
+        loaded++;
+      }
+    }
+  }
+
+  const status = document.getElementById('liveStatus');
+  if (status) status.textContent = 'Imported ' + loaded + ' studies from ' + (fileName ?? 'CSV');
+  sync();
+}
 
 function sync() {
   const type = getEndpointType();
