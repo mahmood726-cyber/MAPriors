@@ -3730,11 +3730,11 @@ function importJSON(event) {
       document.getElementById('endpointType').value = epType;
       for (const d of arr) {
         if (epType === 'binary') {
-          addRow({ study: d.study ?? d.name, events: d.events ?? d.r, n: d.n ?? d.N });
+          addRow({ trial: d.study ?? d.trial ?? d.name, events: d.events ?? d.r, n: d.n ?? d.N });
         } else if (epType === 'continuous') {
-          addRow({ study: d.study ?? d.name, mean: d.mean ?? d.yi, sd: d.sd, n: d.n ?? d.N });
+          addRow({ trial: d.study ?? d.trial ?? d.name, mean: d.mean ?? d.yi, sd: d.sd, n: d.n ?? d.N });
         } else {
-          addRow({ study: d.study ?? d.name, median: d.median, events: d.events, n: d.n ?? d.N });
+          addRow({ trial: d.study ?? d.trial ?? d.name, median: d.median, events: d.events, n: d.n ?? d.N });
         }
       }
       announce(`Loaded ${studies.length} studies from JSON`);
@@ -3800,15 +3800,15 @@ function tteToLogHR(median, events, n) {
 
 // ---- TruthCert Bundle ----
 async function generateTruthCert() {
-  const mapData = window._mapResult ?? null;
+  const mapData = (typeof mapResult !== 'undefined' ? mapResult : null);
   const bundle = {
     version: '1.0', tool: 'MAPriors',
     generated: new Date().toISOString(),
     data: { studies: studies.map(s => ({ study: s.study, ...s })), k: studies.length, endpoint: getEndpointType() },
     results: mapData ? {
-      map_mean: mapData.mu_map, map_sd: Math.sqrt(mapData.var_map),
-      tau: mapData.tau, ess_pure: mapData.ess_pure, ess_robust: mapData.ess_robust,
-      w0: parseFloat(document.getElementById('w0Slider')?.value ?? 50) / 100
+      map_mean: mapData.map_mu, map_sd: Math.sqrt(mapData.map_var),
+      tau: mapData.tau, ess_map: mapData.ess_map, ess_robust: mapData.ess_robust,
+      w0: parseFloat(document.getElementById('wSlider')?.value ?? 50) / 100
     } : null
   };
   const encoder = new TextEncoder();
@@ -3818,7 +3818,7 @@ async function generateTruthCert() {
   bundle.audit = {
     certification: mapData ? 'CERTIFIED' : 'UNCERTIFIED',
     prior_claims: mapData ? [{
-      claim: `MAP prior: mean=${mapData.mu_map?.toFixed(4)}, ESS=${mapData.ess_pure?.toFixed(1)}`,
+      claim: `MAP prior: mean=${mapData.map_mu?.toFixed(4)}, ESS=${mapData.ess_map?.toFixed(1)}`,
       evidence: `${studies.length} historical studies, REML hierarchical model`,
       hash: bundle.sha256.substring(0, 16)
     }] : []
@@ -3835,7 +3835,7 @@ async function renderTruthCert() {
   badge.className = 'truthcert-badge ' + (bundle.audit.certification === 'CERTIFIED' ? 'pass' : 'fail');
   let html = `<div><strong>SHA-256:</strong> ${bundle.sha256}</div>`;
   if (bundle.results) {
-    html += `<div><strong>MAP Mean:</strong> ${bundle.results.map_mean?.toFixed(4)} | <strong>ESS:</strong> ${bundle.results.ess_pure?.toFixed(1)} | <strong>w0:</strong> ${(bundle.results.w0 * 100).toFixed(0)}%</div>`;
+    html += `<div><strong>MAP Mean:</strong> ${bundle.results.map_mean?.toFixed(4)} | <strong>ESS:</strong> ${bundle.results.ess_map?.toFixed(1)} | <strong>w0:</strong> ${(bundle.results.w0 * 100).toFixed(0)}%</div>`;
   }
   html += `<div><strong>Status:</strong> <span class="truthcert-badge ${bundle.audit.certification === 'CERTIFIED' ? 'pass' : 'fail'}">${bundle.audit.certification}</span></div>`;
   document.getElementById('truthcertContent').innerHTML = html;
@@ -3894,7 +3894,7 @@ const _origRenderAll = typeof renderResultsAll === 'function' ? renderResultsAll
 if (_origRenderAll) {
   renderResultsAll = function() {
     _origRenderAll();
-    renderTruthCert();
+    renderTruthCert().catch(e => { console.error('TruthCert:', e); document.getElementById('truthcertCard').style.display = 'none'; });
   };
 }
 
