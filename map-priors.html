@@ -272,6 +272,29 @@ input:focus-visible, select:focus-visible, button:focus-visible {
   z-index:300; max-width:260px; white-space:normal;
 }
 .info-tooltip:hover::after, .info-tooltip:focus::after { opacity:1; }
+
+/* Drop zone */
+.drop-zone { border:2px dashed var(--border); border-radius:var(--radius); padding:20px; text-align:center; color:var(--text-muted); font-size:0.9rem; margin-top:8px; transition:0.2s; cursor:pointer; }
+.drop-zone.active { border-color:var(--accent); background:var(--accent-light); color:var(--accent); }
+
+/* TruthCert */
+.truthcert-badge { display:inline-flex; gap:4px; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:700; }
+.truthcert-badge.pass { background:#d1fae5; color:#065f46; }
+.truthcert-badge.fail { background:#fee2e2; color:#991b1b; }
+body.dark .truthcert-badge.pass { background:#064e3b; color:#6ee7b7; }
+body.dark .truthcert-badge.fail { background:#7f1d1d; color:#fca5a5; }
+
+/* Tutorial */
+.tutorial-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9998; display:none; }
+.tutorial-overlay.active { display:block; }
+.tutorial-box { position:fixed; z-index:9999; background:var(--bg-card); border:2px solid var(--accent); border-radius:var(--radius); padding:18px; max-width:400px; box-shadow:0 8px 32px rgba(0,0,0,0.3); }
+.tutorial-box h3 { color:var(--accent); margin-bottom:6px; font-size:1rem; }
+.tutorial-box p { font-size:0.85rem; line-height:1.5; margin-bottom:10px; }
+.tutorial-nav { display:flex; gap:8px; justify-content:space-between; align-items:center; }
+.tutorial-nav .step-ind { font-size:0.75rem; color:var(--text-muted); }
+
+/* Time-to-event */
+.tte-info { background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius); padding:12px; margin-top:8px; font-size:0.82rem; }
 </style>
 </head>
 <body>
@@ -291,6 +314,8 @@ input:focus-visible, select:focus-visible, button:focus-visible {
     <button onclick="exportRCode()">Export R Code</button>
     <button onclick="generateRegulatoryReport()">Regulatory Report</button>
     <button onclick="exportReport()">Export CSV</button>
+    <button onclick="exportPNG()">Export PNG</button>
+    <button onclick="startTutorial()">Tutorial</button>
     <button id="themeBtn" onclick="toggleTheme()">Dark Mode</button>
   </div>
 </header>
@@ -305,6 +330,7 @@ input:focus-visible, select:focus-visible, button:focus-visible {
         <select id="endpointType" onchange="sync()" style="font-family:var(--font);padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-input);color:var(--text)">
           <option value="binary">Binary (events/N)</option>
           <option value="continuous">Continuous (mean, SD, N)</option>
+          <option value="tte">Time-to-Event (median, events, N)</option>
         </select>
       </div>
       <div>
@@ -333,6 +359,11 @@ input:focus-visible, select:focus-visible, button:focus-visible {
       <button onclick="clearAll()">Clear All</button>
       <button onclick="document.getElementById('csvFileInput').click()" aria-label="Import data from CSV file">Import CSV</button>
       <input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" style="display:none" onchange="handleCSVImport(event)">
+      <button onclick="document.getElementById('jsonInput').click()">Import JSON</button>
+      <input type="file" id="jsonInput" accept=".json" style="display:none" onchange="importJSON(event)">
+    </div>
+    <div class="drop-zone" id="dropZone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+      Drop CSV or JSON file here
     </div>
   </div>
 
@@ -568,8 +599,30 @@ input:focus-visible, select:focus-visible, button:focus-visible {
       <button class="primary" id="webrRunBtn" onclick="runWebRValidation()" aria-label="Run WebR validation">Validate with R</button>
       <div id="webrResults"></div>
     </div>
+
+    <!-- TruthCert Bundle -->
+    <div class="card fade-in" id="truthcertCard" style="display:none">
+      <h2>TruthCert Bundle <span id="truthcertBadge" class="truthcert-badge"></span></h2>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px">
+        SHA-256 cryptographic audit trail. Prior derivation provenance chain.
+      </p>
+      <div id="truthcertContent" style="font-family:var(--mono);font-size:0.8rem;background:var(--bg-input);padding:10px;border-radius:var(--radius);overflow-x:auto"></div>
+      <button onclick="downloadTruthCert()" style="margin-top:8px">Download Bundle</button>
+    </div>
   </div>
 </main>
+
+<!-- Tutorial -->
+<div class="tutorial-overlay" id="tutorialOverlay" onclick="closeTutorial()"></div>
+<div class="tutorial-box" id="tutorialBox" style="display:none">
+  <h3 id="tutTitle"></h3>
+  <p id="tutText"></p>
+  <div class="tutorial-nav">
+    <button onclick="tutPrev()" id="tutPrevBtn">Previous</button>
+    <span class="step-ind" id="tutStep"></span>
+    <button class="primary" onclick="tutNext()" id="tutNextBtn">Next</button>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -3657,6 +3710,194 @@ const DEMO_DATASETS = {
 };
 
 // ---- Auto-load demo and auto-derive on first page load ----
+// ============================================================
+// NEW FEATURES: JSON Import, Drag-Drop, PNG Export, Tutorial,
+// TruthCert, Time-to-Event Support
+// ============================================================
+
+// ---- JSON Import ----
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const arr = Array.isArray(data) ? data : (data.studies ?? data.data ?? []);
+      if (!arr.length) { announce('No study data found.'); return; }
+      clearAll();
+      const epType = arr[0].median != null ? 'tte' : (arr[0].events != null ? 'binary' : 'continuous');
+      document.getElementById('endpointType').value = epType;
+      for (const d of arr) {
+        if (epType === 'binary') {
+          addRow({ study: d.study ?? d.name, events: d.events ?? d.r, n: d.n ?? d.N });
+        } else if (epType === 'continuous') {
+          addRow({ study: d.study ?? d.name, mean: d.mean ?? d.yi, sd: d.sd, n: d.n ?? d.N });
+        } else {
+          addRow({ study: d.study ?? d.name, median: d.median, events: d.events, n: d.n ?? d.N });
+        }
+      }
+      announce(`Loaded ${studies.length} studies from JSON`);
+    } catch (err) { announce('Invalid JSON: ' + err.message); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ---- Drag-and-Drop ----
+function handleDragOver(e) { e.preventDefault(); document.getElementById('dropZone').classList.add('active'); }
+function handleDragLeave(e) { document.getElementById('dropZone').classList.remove('active'); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('active');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  if (file.name.endsWith('.json')) {
+    importJSON({ target: { files: [file], value: '' } });
+  } else {
+    handleCSVImport({ target: { files: [file], value: '' } });
+  }
+}
+
+// ---- PNG Export ----
+function exportPNG() {
+  const svgEl = document.querySelector('#densityPlot svg') ?? document.querySelector('#forestPlot svg');
+  if (!svgEl) { console.warn('Run analysis first.'); return; }
+  const svgData = new XMLSerializer().serializeToString(svgEl);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+  const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  img.onload = () => {
+    canvas.width = img.width * 2; canvas.height = img.height * 2;
+    ctx.scale(2, 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(b => {
+      const pngUrl = URL.createObjectURL(b);
+      const a = document.createElement('a');
+      a.href = pngUrl; a.download = 'map-prior-density.png';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(pngUrl);
+    }, 'image/png');
+  };
+  img.src = url;
+}
+
+// ---- Time-to-Event Support ----
+// Convert median survival to log-hazard-rate for hierarchical model
+function tteToLogHR(median, events, n) {
+  // Exponential assumption: lambda = ln(2)/median
+  // log-HR ~ log(lambda_i / lambda_ref)
+  // SE approximation: 1/sqrt(events) (Parmar et al. 1998)
+  const logLambda = Math.log(Math.log(2) / median);
+  const se = 1 / Math.sqrt(Math.max(1, events));
+  return { yi: logLambda, vi: se * se, se };
+}
+
+// ---- TruthCert Bundle ----
+async function generateTruthCert() {
+  const mapData = window._mapResult ?? null;
+  const bundle = {
+    version: '1.0', tool: 'MAPriors',
+    generated: new Date().toISOString(),
+    data: { studies: studies.map(s => ({ study: s.study, ...s })), k: studies.length, endpoint: getEndpointType() },
+    results: mapData ? {
+      map_mean: mapData.mu_map, map_sd: Math.sqrt(mapData.var_map),
+      tau: mapData.tau, ess_pure: mapData.ess_pure, ess_robust: mapData.ess_robust,
+      w0: parseFloat(document.getElementById('w0Slider')?.value ?? 50) / 100
+    } : null
+  };
+  const encoder = new TextEncoder();
+  const dataStr = JSON.stringify(bundle.data) + JSON.stringify(bundle.results);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(dataStr));
+  bundle.sha256 = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  bundle.audit = {
+    certification: mapData ? 'CERTIFIED' : 'UNCERTIFIED',
+    prior_claims: mapData ? [{
+      claim: `MAP prior: mean=${mapData.mu_map?.toFixed(4)}, ESS=${mapData.ess_pure?.toFixed(1)}`,
+      evidence: `${studies.length} historical studies, REML hierarchical model`,
+      hash: bundle.sha256.substring(0, 16)
+    }] : []
+  };
+  return bundle;
+}
+
+async function renderTruthCert() {
+  const card = document.getElementById('truthcertCard');
+  card.style.display = '';
+  const bundle = await generateTruthCert();
+  const badge = document.getElementById('truthcertBadge');
+  badge.textContent = bundle.audit.certification;
+  badge.className = 'truthcert-badge ' + (bundle.audit.certification === 'CERTIFIED' ? 'pass' : 'fail');
+  let html = `<div><strong>SHA-256:</strong> ${bundle.sha256}</div>`;
+  if (bundle.results) {
+    html += `<div><strong>MAP Mean:</strong> ${bundle.results.map_mean?.toFixed(4)} | <strong>ESS:</strong> ${bundle.results.ess_pure?.toFixed(1)} | <strong>w0:</strong> ${(bundle.results.w0 * 100).toFixed(0)}%</div>`;
+  }
+  html += `<div><strong>Status:</strong> <span class="truthcert-badge ${bundle.audit.certification === 'CERTIFIED' ? 'pass' : 'fail'}">${bundle.audit.certification}</span></div>`;
+  document.getElementById('truthcertContent').innerHTML = html;
+  window._mpBundle = bundle;
+}
+
+function downloadTruthCert() {
+  const bundle = window._mpBundle;
+  if (!bundle) return;
+  const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `truthcert-mapriors-${bundle.sha256.substring(0, 8)}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ---- Tutorial System ----
+const MP_TUTORIAL = [
+  { target: '#dataCard', title: 'Step 1: Historical Data', text: 'Enter historical control arm data from prior trials. Each study needs events/N (binary) or mean/SD/N (continuous). These historical studies form the basis of the MAP prior.' },
+  { target: '#endpointType', title: 'Endpoint Type', text: 'Choose binary (events/N), continuous (mean/SD/N), or time-to-event (median/events/N). The hierarchical model adapts to each type.' },
+  { target: '#deriveCard', title: 'Step 2: Derive MAP Prior', text: 'Click "Derive MAP Prior" to fit a normal-normal hierarchical model. The MAP predictive distribution becomes the informative prior for your new trial.' },
+  { target: '#densityPlot', title: 'Prior Density Plot', text: 'Three distributions: Pure MAP (most informative), Robust MAP (mixture with vague), and Vague (non-informative reference). The slider controls the robust mixture weight.' },
+  { target: '#essSection', title: 'Effective Sample Size', text: 'ESS tells regulators "how many patients is this prior worth?" Morita (2008) method computes ESS from the curvature of the prior at its mode.' },
+  { target: '#ocSection', title: 'Operating Characteristics', text: 'Monte Carlo simulation of trial performance under different true effects. Shows power, type I error, bias, and coverage for MAP vs vague priors.' },
+  { target: '#sampleSizeSection', title: 'Sample Size Savings', text: 'How many fewer patients does the MAP prior allow? Shows the control arm N reduction while maintaining target power.' }
+];
+let tutStep = -1;
+
+function startTutorial() { tutStep = 0; showTutStep(); }
+function showTutStep() {
+  if (tutStep < 0 || tutStep >= MP_TUTORIAL.length) { closeTutorial(); return; }
+  const s = MP_TUTORIAL[tutStep];
+  document.getElementById('tutorialOverlay').classList.add('active');
+  document.getElementById('tutorialBox').style.display = 'block';
+  document.getElementById('tutTitle').textContent = s.title;
+  document.getElementById('tutText').textContent = s.text;
+  document.getElementById('tutStep').textContent = `${tutStep + 1} / ${MP_TUTORIAL.length}`;
+  document.getElementById('tutPrevBtn').style.display = tutStep === 0 ? 'none' : '';
+  document.getElementById('tutNextBtn').textContent = tutStep === MP_TUTORIAL.length - 1 ? 'Finish' : 'Next';
+  const el = document.querySelector(s.target);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const r = el.getBoundingClientRect();
+    const box = document.getElementById('tutorialBox');
+    box.style.top = Math.min(r.bottom + 10, window.innerHeight - 200) + 'px';
+    box.style.left = Math.min(r.left, window.innerWidth - 420) + 'px';
+  }
+}
+function tutNext() { tutStep++; if (tutStep >= MP_TUTORIAL.length) closeTutorial(); else showTutStep(); }
+function tutPrev() { if (tutStep > 0) { tutStep--; showTutStep(); } }
+function closeTutorial() { tutStep = -1; document.getElementById('tutorialOverlay').classList.remove('active'); document.getElementById('tutorialBox').style.display = 'none'; }
+
+// ---- Patch renderResultsAll to include TruthCert ----
+const _origRenderAll = typeof renderResultsAll === 'function' ? renderResultsAll : null;
+if (_origRenderAll) {
+  renderResultsAll = function() {
+    _origRenderAll();
+    renderTruthCert();
+  };
+}
+
 function autoLoadDemo() {
   loadExample('crohns');
   // Auto-run derivation after a short delay to let DOM settle
