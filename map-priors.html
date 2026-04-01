@@ -330,7 +330,7 @@ body.dark .truthcert-badge.fail { background:#7f1d1d; color:#fca5a5; }
         <select id="endpointType" onchange="sync()" style="font-family:var(--font);padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-input);color:var(--text)">
           <option value="binary">Binary (events/N)</option>
           <option value="continuous">Continuous (mean, SD, N)</option>
-          <option value="tte">Time-to-Event (median, events, N)</option>
+          <option value="tte" disabled>Time-to-Event (coming soon)</option>
         </select>
       </div>
       <div>
@@ -362,8 +362,8 @@ body.dark .truthcert-badge.fail { background:#7f1d1d; color:#fca5a5; }
       <button onclick="document.getElementById('jsonInput').click()">Import JSON</button>
       <input type="file" id="jsonInput" accept=".json" style="display:none" onchange="importJSON(event)">
     </div>
-    <div class="drop-zone" id="dropZone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
-      Drop CSV or JSON file here
+    <div class="drop-zone" id="dropZone" role="button" tabindex="0" aria-label="Drop CSV or JSON file here, or press Enter to browse" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('csvFileInput').click()}" onclick="document.getElementById('csvFileInput').click()">
+      Drop CSV or JSON file here (or click)
     </div>
   </div>
 
@@ -614,7 +614,7 @@ body.dark .truthcert-badge.fail { background:#7f1d1d; color:#fca5a5; }
 
 <!-- Tutorial -->
 <div class="tutorial-overlay" id="tutorialOverlay" onclick="closeTutorial()"></div>
-<div class="tutorial-box" id="tutorialBox" style="display:none">
+<div class="tutorial-box" id="tutorialBox" style="display:none" role="dialog" aria-modal="true" aria-labelledby="tutTitle">
   <h3 id="tutTitle"></h3>
   <p id="tutText"></p>
   <div class="tutorial-nav">
@@ -1143,7 +1143,7 @@ function deriveMAPContinuous(w, confLevel) {
 
   // Vague: centered on grand mean with very large variance
   const grand_sd = Math.sqrt(vi.reduce((s,v)=>s+v,0)/k) * 10;
-  const vague_mu = mu_post;
+  const vague_mu = 0; // Reference prior centered at 0 (mirrors binary case at logit(0.5)=0)
   const vague_var = grand_sd * grand_sd;
 
   const robust_mu = w*mu_post + (1-w)*vague_mu;
@@ -1495,6 +1495,7 @@ function seededBinomial(rng, n, p) {
 function updateAlpha0() {
   const val = parseInt(document.getElementById('alpha0Slider').value) / 100;
   document.getElementById('alpha0Val').textContent = val.toFixed(2);
+  document.getElementById('alpha0Slider').setAttribute('aria-valuenow', val.toFixed(2));
   if (mapResult) {
     renderPowerPrior();
     renderComparisonTable();
@@ -2311,6 +2312,7 @@ function exportReport() {
 function updateTauComm() {
   const val = parseInt(document.getElementById('tauCommSlider').value) / 100;
   document.getElementById('tauCommVal').textContent = val.toFixed(2);
+  document.getElementById('tauCommSlider').setAttribute('aria-valuenow', val.toFixed(2));
   if (mapResult) {
     renderCommensuratePrior();
     renderComparisonTable();
@@ -3865,7 +3867,8 @@ const MP_TUTORIAL = [
 ];
 let tutStep = -1;
 
-function startTutorial() { tutStep = 0; showTutStep(); }
+function mpTutEsc(e) { if (e.key === 'Escape') closeTutorial(); }
+function startTutorial() { tutStep = 0; document.addEventListener('keydown', mpTutEsc); showTutStep(); }
 function showTutStep() {
   if (tutStep < 0 || tutStep >= MP_TUTORIAL.length) { closeTutorial(); return; }
   const s = MP_TUTORIAL[tutStep];
@@ -3884,10 +3887,11 @@ function showTutStep() {
     box.style.top = Math.min(r.bottom + 10, window.innerHeight - 200) + 'px';
     box.style.left = Math.min(r.left, window.innerWidth - 420) + 'px';
   }
+  setTimeout(() => document.getElementById('tutNextBtn').focus(), 100);
 }
 function tutNext() { tutStep++; if (tutStep >= MP_TUTORIAL.length) closeTutorial(); else showTutStep(); }
 function tutPrev() { if (tutStep > 0) { tutStep--; showTutStep(); } }
-function closeTutorial() { tutStep = -1; document.getElementById('tutorialOverlay').classList.remove('active'); document.getElementById('tutorialBox').style.display = 'none'; }
+function closeTutorial() { tutStep = -1; document.removeEventListener('keydown', mpTutEsc); document.getElementById('tutorialOverlay').classList.remove('active'); document.getElementById('tutorialBox').style.display = 'none'; }
 
 // ---- Patch renderResultsAll to include TruthCert ----
 const _origRenderAll = typeof renderResultsAll === 'function' ? renderResultsAll : null;
