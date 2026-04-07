@@ -9,13 +9,34 @@
   "summary": "First browser-based MAP prior engine with robust mixture, power, and commensurate priors, OC simulation, sample size savings, prior evolution animation, and TruthCert provenance.",
   "body": "Can meta-analytic predictive priors and dynamic borrowing be made accessible through a browser-based tool without requiring R or Stan expertise? Eight historical Crohn disease placebo-arm studies totaling 960 patients from the Neuenschwander canonical dataset were analyzed alongside oncology ORR and ulcerative colitis CDAI built-in examples. MAPriors, a single-file HTML application of 3,925 lines, implements Bayesian hierarchical modeling with robust mixture priors, power priors, commensurate priors, prior evolution animation, and operating characteristics simulation, with TruthCert SHA-256 audit provenance. The Crohn dataset produced a MAP prior mean of 17.7% (95% credible interval 11.2-25.8%) with Morita effective sample size of 959 patients under near-zero heterogeneity. Operating characteristics confirmed nominal type I error near 5% and power gains of 10-15 percentage points over vague-prior designs, with sample size savings of 20-35% in the control arm. This is the first browser-based MAP prior engine, validated by 40 Selenium tests with WebR cross-validation and regulatory reporting. A limitation is the approximate REML inference rather than full Hamiltonian Monte Carlo.",
   "sentences": [
-    {"role": "Question", "text": "Can meta-analytic predictive priors and dynamic borrowing be made accessible through a browser-based tool without requiring R or Stan expertise?"},
-    {"role": "Dataset", "text": "Eight historical Crohn disease placebo-arm studies totaling 960 patients from the Neuenschwander canonical dataset were analyzed alongside oncology ORR and ulcerative colitis CDAI built-in examples."},
-    {"role": "Method", "text": "MAPriors, a single-file HTML application of 3,925 lines, implements Bayesian hierarchical modeling with robust mixture priors, power priors, commensurate priors, prior evolution animation, and operating characteristics simulation, with TruthCert SHA-256 audit provenance."},
-    {"role": "Primary result", "text": "The Crohn dataset produced a MAP prior mean of 17.7% (95% credible interval 11.2-25.8%) with Morita effective sample size of 959 patients under near-zero heterogeneity."},
-    {"role": "Robustness", "text": "Operating characteristics confirmed nominal type I error near 5% and power gains of 10-15 percentage points over vague-prior designs, with sample size savings of 20-35% in the control arm."},
-    {"role": "Interpretation", "text": "This is the first browser-based MAP prior engine, validated by 40 Selenium tests with WebR cross-validation and regulatory reporting."},
-    {"role": "Boundary", "text": "A limitation is the approximate REML inference rather than full Hamiltonian Monte Carlo."}
+    {
+      "role": "Question",
+      "text": "Can meta-analytic predictive priors and dynamic borrowing be made accessible through a browser-based tool without requiring R or Stan expertise?"
+    },
+    {
+      "role": "Dataset",
+      "text": "Eight historical Crohn disease placebo-arm studies totaling 960 patients from the Neuenschwander canonical dataset were analyzed alongside oncology ORR and ulcerative colitis CDAI built-in examples."
+    },
+    {
+      "role": "Method",
+      "text": "MAPriors, a single-file HTML application of 3,925 lines, implements Bayesian hierarchical modeling with robust mixture priors, power priors, commensurate priors, prior evolution animation, and operating characteristics simulation, with TruthCert SHA-256 audit provenance."
+    },
+    {
+      "role": "Primary result",
+      "text": "The Crohn dataset produced a MAP prior mean of 17.7% (95% credible interval 11.2-25.8%) with Morita effective sample size of 959 patients under near-zero heterogeneity."
+    },
+    {
+      "role": "Robustness",
+      "text": "Operating characteristics confirmed nominal type I error near 5% and power gains of 10-15 percentage points over vague-prior designs, with sample size savings of 20-35% in the control arm."
+    },
+    {
+      "role": "Interpretation",
+      "text": "This is the first browser-based MAP prior engine, validated by 40 Selenium tests with WebR cross-validation and regulatory reporting."
+    },
+    {
+      "role": "Boundary",
+      "text": "A limitation is the approximate REML inference rather than full Hamiltonian Monte Carlo."
+    }
   ],
   "notes": {
     "app": "MAPriors v2.0",
@@ -26,11 +47,12 @@
     "date": "2026-04-01",
     "validation": "PASS (40/40 tests, WebR, 3-round review clean)"
   },
-  "affiliation": "Royal Free Hospital, London",
+  "affiliation": "Tahir Heart Institute",
   "email": "mahmood.ahmad2@nhs.net",
   "references": [
     "Neuenschwander B, Capkun-Niggli G, Branson M, Spiegelhalter DJ. Summarizing historical information on controls in clinical trials. Clin Trials. 2010;7(1):5-18.",
     "Morita S, Thall PF, Muller P. Determining the effective sample size of a parametric prior. Biometrics. 2008;64(2):595-602.",
     "Schmidli H, Gsteiger S, Roychoudhury S, et al. Robust meta-analytic-predictive priors in clinical trials with historical control information. Biometrics. 2014;70(4):1023-1032."
-  ]
+  ],
+  "submitted": false
 }

@@ -1,5 +1,5 @@
 Mahmood Ahmad
-Royal Free Hospital, London
+Tahir Heart Institute
 mahmood.ahmad2@nhs.net
 
 MAPriors: Browser-Based Meta-Analytic Predictive Priors and Dynamic Borrowing Engine
@@ -21,7 +21,3 @@ References
 1. Neuenschwander B, Capkun-Niggli G, Branson M, Spiegelhalter DJ. Summarizing historical information on controls in clinical trials. Clin Trials. 2010;7(1):5-18.
 2. Morita S, Thall PF, Muller P. Determining the effective sample size of a parametric prior. Biometrics. 2008;64(2):595-602.
 3. Schmidli H, Gsteiger S, Roychoudhury S, et al. Robust meta-analytic-predictive priors in clinical trials with historical control information. Biometrics. 2014;70(4):1023-1032.
-
-AI Disclosure
-
-This work represents a compiler-generated evidence micro-publication. AI (Claude, Anthropic) was used as a constrained synthesis engine for infrastructure generation, not as an autonomous author. The 156-word body was written and verified by the author, who takes full responsibility. This disclosure follows ICMJE 2023, COPE, and WAME recommendations. All analysis code, data, and TruthCert bundles are archived for independent verification.
