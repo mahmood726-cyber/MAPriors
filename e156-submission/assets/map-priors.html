@@ -301,14 +301,14 @@ input:focus-visible, select:focus-visible, button:focus-visible {
     <h2>Configuration</h2>
     <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
       <div>
-        <label style="font-size:0.85rem;font-weight:600">Endpoint Type:</label>
+        <label for="endpointType" style="font-size:0.85rem;font-weight:600">Endpoint Type:</label>
         <select id="endpointType" onchange="sync()" style="font-family:var(--font);padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-input);color:var(--text)">
           <option value="binary">Binary (events/N)</option>
           <option value="continuous">Continuous (mean, SD, N)</option>
         </select>
       </div>
       <div>
-        <label style="font-size:0.85rem;font-weight:600">Confidence Level:</label>
+        <label for="confLevel" style="font-size:0.85rem;font-weight:600">Confidence Level:</label>
         <select id="confLevel" style="font-family:var(--font);padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-input);color:var(--text)">
           <option value="0.95" selected>95%</option>
           <option value="0.90">90%</option>
@@ -332,7 +332,7 @@ input:focus-visible, select:focus-visible, button:focus-visible {
       <button onclick="addRows(3)">+ Add 3</button>
       <button onclick="clearAll()">Clear All</button>
       <button onclick="document.getElementById('csvFileInput').click()" aria-label="Import data from CSV file">Import CSV</button>
-      <input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" style="display:none" onchange="handleCSVImport(event)">
+      <input type="file" id="csvFileInput" aria-label="Upload CSV or TSV data file" accept=".csv,.tsv,.txt" style="display:none" onchange="handleCSVImport(event)">
     </div>
   </div>
 
@@ -477,7 +477,7 @@ input:focus-visible, select:focus-visible, button:focus-visible {
     <div class="card fade-in" style="margin-top:18px" id="sampleSizeCard">
       <h2>Sample Size Savings <span class="badge">Design</span></h2>
       <div class="input-group">
-        <label>Planned control arm N:</label>
+        <label for="ssPlannedN">Planned control arm N:</label>
         <input type="number" id="ssPlannedN" value="100" min="1" max="10000" onchange="renderSampleSize()">
       </div>
       <div id="sampleSizeContent"></div>
@@ -510,31 +510,31 @@ input:focus-visible, select:focus-visible, button:focus-visible {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
         <div>
           <div class="input-group">
-            <label>Control arm N:</label>
+            <label for="ocNCtrl">Control arm N:</label>
             <input type="number" id="ocNCtrl" value="50" min="1" max="5000">
           </div>
           <div class="input-group">
-            <label>Treatment arm N:</label>
+            <label for="ocNTrt">Treatment arm N:</label>
             <input type="number" id="ocNTrt" value="50" min="1" max="5000">
           </div>
           <div class="input-group">
-            <label id="ocTrueCtrlLabel">True control rate:</label>
+            <label id="ocTrueCtrlLabel" for="ocTrueCtrl">True control rate:</label>
             <input type="range" id="ocTrueCtrl" min="0" max="100" value="20" oninput="updateOCSliders()">
             <span class="slider-val" id="ocTrueCtrlVal">0.20</span>
           </div>
         </div>
         <div>
           <div class="input-group">
-            <label id="ocTrueEffLabel">True treatment effect (log-OR):</label>
+            <label id="ocTrueEffLabel" for="ocTrueEff">True treatment effect (log-OR):</label>
             <input type="range" id="ocTrueEff" min="-200" max="200" value="-50" oninput="updateOCSliders()">
             <span class="slider-val" id="ocTrueEffVal">-0.50</span>
           </div>
           <div class="input-group">
-            <label>Number of simulations:</label>
+            <label for="ocNSim">Number of simulations:</label>
             <input type="number" id="ocNSim" value="1000" min="100" max="5000" step="100">
           </div>
           <div class="input-group">
-            <label>Decision threshold P(&delta;&gt;0):</label>
+            <label for="ocThreshold">Decision threshold P(&delta;&gt;0):</label>
             <input type="number" id="ocThreshold" value="0.975" min="0.5" max="0.999" step="0.005">
           </div>
         </div>
@@ -642,19 +642,19 @@ function addRow(d) {
   if (type === 'binary') {
     tr.innerHTML = `
       <td style="text-align:center;color:var(--text-muted)">${rowNum}</td>
-      <td><input type="text" value="${escapeHtml(data.trial||'')}" data-f="trial" placeholder="Trial name"></td>
-      <td><input type="text" value="${data.events??''}" data-f="events" placeholder="Events"></td>
-      <td><input type="text" value="${data.n??''}" data-f="n" placeholder="Total N"></td>
+      <td><input type="text" aria-label="Trial name" value="${escapeHtml(data.trial||'')}" data-f="trial" placeholder="Trial name"></td>
+      <td><input type="text" aria-label="Events" value="${data.events??''}" data-f="events" placeholder="Events"></td>
+      <td><input type="text" aria-label="Total N" value="${data.n??''}" data-f="n" placeholder="Total N"></td>
       <td style="text-align:center;color:var(--text-muted);font-family:var(--mono)" data-f="rate">—</td>
       <td><button onclick="this.closest('tr').remove();sync()" style="padding:2px 7px;border:none;background:none;color:var(--danger);cursor:pointer;font-size:1.1rem">&times;</button></td>
     `;
   } else {
     tr.innerHTML = `
       <td style="text-align:center;color:var(--text-muted)">${rowNum}</td>
-      <td><input type="text" value="${escapeHtml(data.trial||'')}" data-f="trial" placeholder="Trial name"></td>
-      <td><input type="text" value="${data.mean??''}" data-f="mean" placeholder="Mean"></td>
-      <td><input type="text" value="${data.sd??''}" data-f="sd" placeholder="SD"></td>
-      <td><input type="text" value="${data.n??''}" data-f="n" placeholder="N"></td>
+      <td><input type="text" aria-label="Trial name" value="${escapeHtml(data.trial||'')}" data-f="trial" placeholder="Trial name"></td>
+      <td><input type="text" aria-label="Mean" value="${data.mean??''}" data-f="mean" placeholder="Mean"></td>
+      <td><input type="text" aria-label="Standard deviation" value="${data.sd??''}" data-f="sd" placeholder="SD"></td>
+      <td><input type="text" aria-label="Sample size (N)" value="${data.n??''}" data-f="n" placeholder="N"></td>
       <td><button onclick="this.closest('tr').remove();sync()" style="padding:2px 7px;border:none;background:none;color:var(--danger);cursor:pointer;font-size:1.1rem">&times;</button></td>
     `;
   }
