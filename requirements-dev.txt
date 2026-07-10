@@ -1,0 +1,14 @@
+# Development / test dependencies for MAPriors.
+#
+# Default (browser-free) tests -- `python -m pytest -q` -- need only pytest.
+# The numerical suite (tests/test_numerical.py) additionally requires Node.js on
+# PATH (used to evaluate the app's inline JS estimators headlessly); it skips
+# cleanly if `node` is absent.
+#
+# The Selenium end-to-end suite (tests/test_mapriors.py, run with
+# RUN_BROWSER_TESTS=1) also requires a local Chrome/Chromium install and a
+# matching chromedriver on PATH. Selenium 4.6+ can auto-manage the driver via
+# Selenium Manager, so a separate chromedriver download is usually unnecessary.
+
+pytest>=7.0
+selenium>=4.6,<5
